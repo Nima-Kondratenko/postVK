@@ -1,5 +1,5 @@
 data class Post(
-    val id: Int,
+    val id: Int = 0, // Установим значение по умолчанию
     val ownerId: Int,
     val fromId: Int,
     val createdBy: Int,
@@ -80,10 +80,26 @@ data class CopyHistory(
 
 object WallService {
     private var posts = mutableListOf<Post>()
+    private var nextId = 1 // Переменная для хранения следующего уникального ID
 
     fun add(post: Post): Post {
-        posts.add(post)
-        return post
+        // Устанавливаем уникальный ID для нового поста
+        val newPost = post.copy(id = nextId)
+        posts.add(newPost)
+        nextId++ // Увеличиваем ID для следующего поста
+        return newPost
+    }
+
+    fun update(post: Post): Boolean {
+        // Находим индекс поста с таким же ID
+        val index = posts.indexOfFirst { it.id == post.id }
+        return if (index != -1) {
+            // Если пост найден, обновляем его свойства
+            posts[index] = post.copy() // Копируем все свойства из переданного поста
+            true
+        } else {
+            false // Пост с таким ID не найден
+        }
     }
 
     fun getPosts(): List<Post> {
@@ -92,40 +108,44 @@ object WallService {
 }
 
 fun main() {
-    // Создаем несколько постов
-    val post1 = Post(
-        id = 1,
-        ownerId = 123,
-        fromId = 123,
-        createdBy = 1,
-        date = 1633046400,
-        text = "Это первый пост!",
-        likes = Likes(count = 10, userLikes = true),
-        comments = Comments(count = 2),
-        reposts = Reposts(count = 1),
-        views = Views(count = 100),
-        postType = "post"
+    // Добавляем посты
+    val post1 = WallService.add(
+        Post(
+            ownerId = 123,
+            fromId = 123,
+            createdBy = 1,
+            date = 1633046400,
+            text = "Это первый пост!",
+            likes = Likes(count = 10, userLikes = true),
+            comments = Comments(count = 2),
+            reposts = Reposts(count = 1),
+            views = Views(count = 100),
+            postType = "post"
+        )
     )
 
-    val post2 = Post(
-        id = 2,
-        ownerId = 124,
-        fromId = 124,
-        createdBy = 1,
-        date = 1633046500,
-        text = "Это второй пост!",
-        likes = Likes(count = 5, userLikes = false),
-        comments = Comments(count = 3),
-        reposts = Reposts(count = 0),
-        views = Views(count = 50),
-        postType = "post"
+    val post2 = WallService.add(
+        Post(
+            ownerId = 124,
+            fromId = 124,
+            createdBy = 1,
+            date = 1633046500,
+            text = "Это второй пост!",
+            likes = Likes(count = 5, userLikes = false),
+            comments = Comments(count = 3),
+            reposts = Reposts(count = 0),
+            views = Views(count = 50),
+            postType = "post"
+        )
     )
 
-    // Добавляем посты в WallService
-    WallService.add(post1)
-    WallService.add(post2)
+    // Обновление первого поста с правильным ID
+    val updatedPost1 = post1.copy(text = "Это обновленный первый пост!")
+    val isUpdated = WallService.update(updatedPost1)
 
-    // Получаем и выводим все посты
+    println("Пост обновлен: $isUpdated")
+
+    // Вывод всех постов
     val allPosts = WallService.getPosts()
     for (post in allPosts) {
         println("Пост ID: ${post.id}")
