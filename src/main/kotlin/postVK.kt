@@ -79,34 +79,37 @@ data class CopyHistory(
 )
 
 object WallService {
-    private var posts = mutableListOf<Post>()
+    private var posts = emptyArray<Post>()
     private var nextId = 1 // Переменная для хранения следующего уникального ID
 
     fun add(post: Post): Post {
-        // Устанавливаем уникальный ID для нового поста
         val newPost = post.copy(id = nextId)
-        posts.add(newPost)
-        nextId++ // Увеличиваем ID для следующего поста
+        posts += newPost
+        nextId++
         return newPost
     }
 
     fun update(post: Post): Boolean {
-        // Находим индекс поста с таким же ID
         val index = posts.indexOfFirst { it.id == post.id }
         return if (index != -1) {
-            // Если пост найден, обновляем его свойства
-            posts[index] = post.copy() // Копируем все свойства из переданного поста
+            posts[index] = post.copy()
             true
         } else {
-            false // Пост с таким ID не найден
+            false
         }
     }
 
+    fun clear() {
+        posts = emptyArray()
+        nextId = 1 // Сбрасываем счетчик ID
+    }
+
     fun getPosts(): List<Post> {
-        return posts
+        return posts.toList()
     }
 }
 
+   
 fun main() {
     // Добавляем посты
     val post1 = WallService.add(
