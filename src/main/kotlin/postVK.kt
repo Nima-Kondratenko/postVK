@@ -109,7 +109,7 @@ object WallService {
     }
 }
 
-   
+
 fun main() {
     // Добавляем посты
     val post1 = WallService.add(
