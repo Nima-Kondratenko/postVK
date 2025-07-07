@@ -1,24 +1,24 @@
 data class Post(
-    val id: Int = 0, // Установим значение по умолчанию
+    val id: Int = 0, // значение по умолчанию
     val ownerId: Int,
     val fromId: Int,
     val createdBy: Int,
     val date: Int,
     val text: String,
-    val replyOwnerId: Int? = null,
-    val replyPostId: Int? = null,
+    val replyOwnerId: Int? = null, // Nullable: может не быть, если пост не является ответом
+    val replyPostId: Int? = null, // Nullable: может не быть, если пост не является ответом
     val friendsOnly: Boolean = false,
-    val comments: Comments = Comments(),
-    val copyright: Copyright? = null,
+    val comments: Comments? = null, // Nullable: может быть отсутствующим
+    val copyright: Copyright? = null, // Nullable: может быть отсутствующим
     val likes: Likes = Likes(),
     val reposts: Reposts = Reposts(),
     val views: Views = Views(),
     val postType: String,
-    val postSource: PostSource? = null,
-    val attachments: List<Attachment> = emptyList(),
-    val geo: Geo? = null,
-    val signerId: Int? = null,
-    val copyHistory: List<CopyHistory> = emptyList()
+    val postSource: PostSource? = null, // Nullable: может быть отсутствующим
+    val attachments: List<Attachment>? = null, // Nullable: может быть отсутствующим
+    val geo: Geo? = null, // Nullable: может быть отсутствующим
+    val signerId: Int? = null, // Nullable: может не быть, если пост не подписан
+    val copyHistory: List<CopyHistory>? = null // Nullable: может быть отсутствующим
 )
 
 data class Comments(
@@ -109,7 +109,6 @@ object WallService {
     }
 }
 
-
 fun main() {
     // Добавляем посты
     val post1 = WallService.add(
@@ -142,18 +141,9 @@ fun main() {
         )
     )
 
-    // Обновление первого поста с правильным ID
+// Обновление первого поста с правильным ID
     val updatedPost1 = post1.copy(text = "Это обновленный первый пост!")
     val isUpdated = WallService.update(updatedPost1)
 
     println("Пост обновлен: $isUpdated")
-
-    // Вывод всех постов
-    val allPosts = WallService.getPosts()
-    for (post in allPosts) {
-        println("Пост ID: ${post.id}")
-        println("Текст: ${post.text}")
-        println("Лайков: ${post.likes.count}, Комментариев: ${post.comments.count}, Репостов: ${post.reposts.count}, Просмотров: ${post.views.count}")
-        println("-----")
-    }
 }
