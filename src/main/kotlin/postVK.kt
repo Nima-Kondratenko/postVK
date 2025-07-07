@@ -1,24 +1,24 @@
 data class Post(
-    val id: Int = 0, // Установим значение по умолчанию
+    val id: Int = 0, // значение по умолчанию
     val ownerId: Int,
     val fromId: Int,
     val createdBy: Int,
     val date: Int,
     val text: String,
-    val replyOwnerId: Int? = null,
-    val replyPostId: Int? = null,
+    val replyOwnerId: Int? = null, // Nullable: может не быть, если пост не является ответом
+    val replyPostId: Int? = null, // Nullable: может не быть, если пост не является ответом
     val friendsOnly: Boolean = false,
-    val comments: Comments = Comments(),
-    val copyright: Copyright? = null,
+    val comments: Comments? = null, // Nullable: может быть отсутствующим
+    val copyright: Copyright? = null, // Nullable: может быть отсутствующим
     val likes: Likes = Likes(),
     val reposts: Reposts = Reposts(),
     val views: Views = Views(),
     val postType: String,
-    val postSource: PostSource? = null,
-    val attachments: List<Attachment> = emptyList(),
-    val geo: Geo? = null,
-    val signerId: Int? = null,
-    val copyHistory: List<CopyHistory> = emptyList()
+    val postSource: PostSource? = null, // Nullable: может быть отсутствующим
+    val attachments: List<Attachment>? = null, // Nullable: может быть отсутствующим
+    val geo: Geo? = null, // Nullable: может быть отсутствующим
+    val signerId: Int? = null, // Nullable: может не быть, если пост не подписан
+    val copyHistory: List<CopyHistory>? = null // Nullable: может быть отсутствующим
 )
 
 data class Comments(
@@ -57,9 +57,55 @@ data class PostSource(
     val type: String? = null
 )
 
-data class Attachment(
-    // Пример поля для описания медиаресурсов
-    val type: String? = null
+interface Attachment {
+    val type: String // Тип вложения
+}
+
+data class PhotoAttachment(val photo: Photo) : Attachment {
+    override val type: String = "photo"
+}
+
+data class AudioAttachment(val audio: Audio) : Attachment {
+    override val type: String = "audio"
+}
+
+data class VideoAttachment(val video: Video) : Attachment {
+    override val type: String = "video"
+}
+
+data class Photo(
+    val id: Int,
+    val albumId: Int,
+    val ownerId: Int,
+    val userId: Int,
+    val text: String,
+    val date: Int,
+    val sizes: List<Size>
+)
+
+data class Size(
+    val height: Int,
+    val width: Int,
+    val url: String,
+    val type: String // тип размера (например, "s", "m", "x")
+)
+
+data class Audio(
+    val id: Int,
+    val ownerId: Int,
+    val title: String,
+    val artist: String,
+    val duration: Int,
+    val url: String
+)
+
+data class Video(
+    val id: Int,
+    val ownerId: Int,
+    val title: String,
+    val description: String,
+    val duration: Int,
+    val link: String
 )
 
 data class Geo(
@@ -109,51 +155,36 @@ object WallService {
     }
 }
 
-
 fun main() {
-    // Добавляем посты
+    // Добавляем посты с вложениями
+    val photoAttachment = PhotoAttachment(
+        Photo(
+            id = 1,
+            albumId = 1,
+            ownerId = 123,
+            userId = 1,
+            text = "фото",
+            date = 1633046400,
+            sizes = listOf(Size(100, 100, "http://example.com/photo.jpg", "m"))
+        )
+    )
+
+    // Пример создания поста с вложениями
     val post1 = WallService.add(
         Post(
             ownerId = 123,
             fromId = 123,
             createdBy = 1,
             date = 1633046400,
-            text = "Это первый пост!",
+            text = "Это первый пост с вложениями!",
             likes = Likes(count = 10, userLikes = true),
             comments = Comments(count = 2),
             reposts = Reposts(count = 1),
             views = Views(count = 100),
-            postType = "post"
+            postType = "post",
+            attachments = listOf(photoAttachment) // Добавляем вложение в пост
         )
     )
 
-    val post2 = WallService.add(
-        Post(
-            ownerId = 124,
-            fromId = 124,
-            createdBy = 1,
-            date = 1633046500,
-            text = "Это второй пост!",
-            likes = Likes(count = 5, userLikes = false),
-            comments = Comments(count = 3),
-            reposts = Reposts(count = 0),
-            views = Views(count = 50),
-            postType = "post"
-        )
-    )
-
-    // Обновление первого поста с правильным ID
-    val updatedPost1 = post1.copy(text = "Это обновленный первый пост!")
-    val isUpdated = WallService.update(updatedPost1)
-
-    println("Пост обновлен: $isUpdated")
-
-    // Вывод всех постов
-    val allPosts = WallService.getPosts()
-    for (post in allPosts) {
-        println("Пост ID: ${post.id}")
-        println("Текст: ${post.text}")
-        println("Лайков: ${post.likes.count}, Комментариев: ${post.comments.count}, Репостов: ${post.reposts.count}, Просмотров: ${post.views.count}")
-        println("-----")
-    }
+    println(post1)
 }
