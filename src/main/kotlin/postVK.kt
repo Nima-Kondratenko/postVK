@@ -1,5 +1,5 @@
 data class Post(
-    val id: Int = 0, // Установим значение по умолчанию
+    val id: Int = 0,
     val ownerId: Int,
     val fromId: Int,
     val createdBy: Int,
@@ -8,17 +8,17 @@ data class Post(
     val replyOwnerId: Int? = null,
     val replyPostId: Int? = null,
     val friendsOnly: Boolean = false,
-    val comments: Comments = Comments(),
+    val comments: Comments? = null,
     val copyright: Copyright? = null,
     val likes: Likes = Likes(),
     val reposts: Reposts = Reposts(),
     val views: Views = Views(),
     val postType: String,
     val postSource: PostSource? = null,
-    val attachments: List<Attachment> = emptyList(),
+    val attachments: List<Attachment>? = null,
     val geo: Geo? = null,
     val signerId: Int? = null,
-    val copyHistory: List<CopyHistory> = emptyList()
+    val copyHistory: List<CopyHistory>? = null
 )
 
 data class Comments(
@@ -57,9 +57,63 @@ data class PostSource(
     val type: String? = null
 )
 
-data class Attachment(
-    // Пример поля для описания медиаресурсов
-    val type: String? = null
+data class Comment(
+    val id: Int,
+    val postId: Int,
+    val ownerId: Int,
+    val date: Int,
+    val text: String
+)
+
+interface Attachment {
+    val type: String // Тип вложения
+}
+
+data class PhotoAttachment(val photo: Photo) : Attachment {
+    override val type: String = "photo"
+}
+
+data class AudioAttachment(val audio: Audio) : Attachment {
+    override val type: String = "audio"
+}
+
+data class VideoAttachment(val video: Video) : Attachment {
+    override val type: String = "video"
+}
+
+data class Photo(
+    val id: Int,
+    val albumId: Int,
+    val ownerId: Int,
+    val userId: Int,
+    val text: String,
+    val date: Int,
+    val sizes: List<Size>
+)
+
+data class Size(
+    val height: Int,
+    val width: Int,
+    val url: String,
+    val type: String // тип размера (например, "s", "m", "x")
+)
+
+data class Audio(
+    val id: Int,
+    val ownerId: Int,
+    val title: String,
+    val artist: String,
+    val duration: Int,
+    val url: String
+)
+
+data class Video(
+    val id: Int,
+    val ownerId: Int,
+    val title: String,
+    val description: String,
+    val duration: Int,
+    val link: String
 )
 
 data class Geo(
@@ -78,18 +132,55 @@ data class CopyHistory(
     val id: Int? = null
 )
 
+class PostNotFoundException(message: String) : Exception(message)
+
 object WallService {
     private var posts = emptyArray<Post>()
-    private var nextId = 1 // Переменная для хранения следующего уникального ID
+    private var comments = emptyArray<Comment>()
+
+    private var nextId = 1 // Переменная для хранения следующего уникального ID поста
+    private var nextCommentId = 1 // Переменная для хранения следующего уникального ID комментария
 
     fun add(post: Post): Post {
+        // Создаем новый пост с уникальным ID
         val newPost = post.copy(id = nextId)
         posts += newPost
         nextId++
         return newPost
     }
 
+    fun createComment(postId: Int, commentText: String, ownerId: Int): Comment {
+        // Проверяем, существует ли пост с данным ID
+        val postIndex = posts.indexOfFirst { it.id == postId }
+        if (postIndex == -1) {
+            throw PostNotFoundException("Пост с ID $postId не найден.")
+        }
+
+        // Создаем новый комментарий
+        val newComment = Comment(
+            id = nextCommentId,
+            postId = postId,
+            ownerId = ownerId,
+            date = System.currentTimeMillis().toInt() / 1000, // Текущая дата в формате UNIX timestamp
+            text = commentText
+        )
+
+        // Добавляем комментарий в массив комментариев
+        comments += newComment
+        nextCommentId++
+
+        // Обновляем количество комментариев в посте безопасно
+        posts[postIndex] = posts[postIndex].copy(
+            comments = posts[postIndex].comments?.let {
+                it.copy(count = it.count + 1)
+            } ?: Comments(count = 1) // Если comments == null, создаем новый объект Comments с count=1
+        )
+
+        return newComment
+    }
+
     fun update(post: Post): Boolean {
+        // Обновляем пост по его ID
         val index = posts.indexOfFirst { it.id == post.id }
         return if (index != -1) {
             posts[index] = post.copy()
@@ -100,60 +191,10 @@ object WallService {
     }
 
     fun clear() {
+        // Очищаем все посты и комментарии
         posts = emptyArray()
-        nextId = 1 // Сбрасываем счетчик ID
-    }
-
-    fun getPosts(): List<Post> {
-        return posts.toList()
-    }
-}
-
-
-fun main() {
-    // Добавляем посты
-    val post1 = WallService.add(
-        Post(
-            ownerId = 123,
-            fromId = 123,
-            createdBy = 1,
-            date = 1633046400,
-            text = "Это первый пост!",
-            likes = Likes(count = 10, userLikes = true),
-            comments = Comments(count = 2),
-            reposts = Reposts(count = 1),
-            views = Views(count = 100),
-            postType = "post"
-        )
-    )
-
-    val post2 = WallService.add(
-        Post(
-            ownerId = 124,
-            fromId = 124,
-            createdBy = 1,
-            date = 1633046500,
-            text = "Это второй пост!",
-            likes = Likes(count = 5, userLikes = false),
-            comments = Comments(count = 3),
-            reposts = Reposts(count = 0),
-            views = Views(count = 50),
-            postType = "post"
-        )
-    )
-
-    // Обновление первого поста с правильным ID
-    val updatedPost1 = post1.copy(text = "Это обновленный первый пост!")
-    val isUpdated = WallService.update(updatedPost1)
-
-    println("Пост обновлен: $isUpdated")
-
-    // Вывод всех постов
-    val allPosts = WallService.getPosts()
-    for (post in allPosts) {
-        println("Пост ID: ${post.id}")
-        println("Текст: ${post.text}")
-        println("Лайков: ${post.likes.count}, Комментариев: ${post.comments.count}, Репостов: ${post.reposts.count}, Просмотров: ${post.views.count}")
-        println("-----")
+        comments = emptyArray()
+        nextId = 1
+        nextCommentId = 1
     }
 }
